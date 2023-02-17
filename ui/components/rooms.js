@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import Avatar from './avatar'
 
+export const hostname = `sparkling-violet-5809.fly.dev`
+export const base_url = `https://${hostname}`
 async function getRooms() {
     try {
-        const url = 'http://localhost:8080/rooms'
+        const url = `${base_url}/rooms`
         let result = await fetch(url)
         return result.json()
     } catch (e) {

@@ -1,32 +1,32 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef } from 'react'
 
 export default function useWebsocket(onMessage) {
-    const ws = useRef(null);
+    const ws = useRef(null)
 
     useEffect(() => {
-        if (ws.current !== null) return;
-        const wsUri = 'ws://localhost:8080/ws';
-        ws.current = new WebSocket(wsUri);
-        ws.current.onopen = () => console.log("ws opened");
-        ws.current.onclose = () => console.log("ws closed");
+        if (ws.current !== null) return
+        const wsUri = `ws://${hostname}/ws`
+        ws.current = new WebSocket(wsUri)
+        ws.current.onopen = () => console.log('ws opened')
+        ws.current.onclose = () => console.log('ws closed')
 
-        const wsCurrent = ws.current;
+        const wsCurrent = ws.current
         return () => {
-            wsCurrent.close();
-        };
-    }, []);
+            wsCurrent.close()
+        }
+    }, [])
 
     useEffect(() => {
-        if (!ws.current) return;
+        if (!ws.current) return
         ws.current.onmessage = e => {
             onMessage(e.data)
-        };
-    }, []);
+        }
+    }, [])
 
-    const sendMessage = (msg) => {
-        if (!ws.current) return;
-        ws.current.send(msg);
+    const sendMessage = msg => {
+        if (!ws.current) return
+        ws.current.send(msg)
     }
 
-    return sendMessage;
+    return sendMessage
 }

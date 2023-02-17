@@ -1,31 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react'
+import { base_url } from '../components/rooms'
 
-const fetchRoomData = async (room_id) => {
-    if (!room_id) return;
-    const url = `http://localhost:8080/conversations/${room_id}`;
+const fetchRoomData = async room_id => {
+    if (!room_id) return
+    const url = `${base_url}/conversations/${room_id}`
     try {
-        let resp = await fetch(url).then(res => res.json());
-        return resp;
+        let resp = await fetch(url).then(res => res.json())
+        return resp
     } catch (e) {
-        console.log(e);
+        console.log(e)
     }
 }
 
 export default function useConversations(room_id) {
-    const [isLoading, setIsLoading] = useState(true);
-    const [messages, setMessages] = useState([]);
+    const [isLoading, setIsLoading] = useState(true)
+    const [messages, setMessages] = useState([])
 
     const updateMessages = (resp = []) => {
-        setIsLoading(false);
+        setIsLoading(false)
         setMessages(resp)
     }
 
-    const fetchConversations = (id) => {
+    const fetchConversations = id => {
         setIsLoading(true)
         fetchRoomData(id).then(updateMessages)
     }
 
-    useEffect(() => fetchConversations(room_id), []);
+    useEffect(() => fetchConversations(room_id), [])
 
-    return [isLoading, messages, setMessages, fetchConversations];
+    return [isLoading, messages, setMessages, fetchConversations]
 }
