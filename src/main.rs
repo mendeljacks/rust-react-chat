@@ -28,7 +28,7 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let server_addr = "127.0.0.1";
+    let server_addr = "0.0.0.0";
     let server_port = 8080;
 
     let app = HttpServer::new(move || {
