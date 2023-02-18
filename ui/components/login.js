@@ -66,7 +66,7 @@ export default function Login({ show, setAuth }) {
                 </div>
 
                 <div>
-                    <label className='text-sm font-light'>Phone</label>
+                    <label className='text-sm font-light'>Phone Number</label>
                     <input
                         required
                         type='text'
