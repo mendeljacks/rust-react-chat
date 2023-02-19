@@ -10,6 +10,7 @@ use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
 };
+use dotenvy::var;
 
 mod db;
 mod models;
@@ -22,8 +23,8 @@ mod session;
 async fn main() -> std::io::Result<()> {
     let server = server::ChatServer::new().start();
 
-    let conn_spec = "chat.db";
-    let manager = ConnectionManager::<SqliteConnection>::new(conn_spec);
+    let database_url = var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
@@ -47,8 +48,8 @@ async fn main() -> std::io::Result<()> {
             .route("/ws", web::get().to(routes::chat_server))
             .service(routes::create_user)
             .service(routes::get_user_by_id)
-            .service(routes::get_user_by_phone)
-            .service(routes::get_conversation_by_id)
+            .service(routes::get_user_by_username)
+            .service(routes::get_message_by_id)
             .service(routes::get_rooms)
             .service(Files::new("/", "./static"))
     })

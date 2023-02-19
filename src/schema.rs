@@ -1,36 +1,52 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    conversations (id) {
-        id -> Text,
-        room_id -> Text,
-        user_id -> Text,
-        content -> Text,
-        created_at -> Text,
+    messages (id) {
+        id -> Int4,
+        room_id -> Int4,
+        user_id -> Int4,
+        content -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    room_has_users (id) {
+        id -> Int4,
+        room_id -> Int4,
+        user_id -> Int4,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
 diesel::table! {
     rooms (id) {
-        id -> Text,
-        name -> Text,
-        last_message -> Text,
-        participant_ids -> Text,
-        created_at -> Text,
+        id -> Int4,
+        name -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
 diesel::table! {
     users (id) {
-        id -> Text,
-        username -> Text,
-        phone -> Text,
-        created_at -> Text,
+        id -> Int4,
+        username -> Varchar,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
     }
 }
 
+diesel::joinable!(messages -> rooms (room_id));
+diesel::joinable!(messages -> users (user_id));
+diesel::joinable!(room_has_users -> rooms (room_id));
+diesel::joinable!(room_has_users -> users (user_id));
+
 diesel::allow_tables_to_appear_in_same_query!(
-    conversations,
+    messages,
+    room_has_users,
     rooms,
     users,
 );

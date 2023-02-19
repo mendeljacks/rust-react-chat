@@ -3,7 +3,7 @@ import { base_url } from '../components/rooms'
 
 const fetchRoomData = async room_id => {
     if (!room_id) return
-    const url = `${base_url}/conversations/${room_id}`
+    const url = `${base_url}/messages/${room_id}`
     try {
         let resp = await fetch(url).then(res => res.json())
         return resp
@@ -12,7 +12,7 @@ const fetchRoomData = async room_id => {
     }
 }
 
-export default function useConversations(room_id) {
+export default function useMessages(room_id) {
     const [isLoading, setIsLoading] = useState(true)
     const [messages, setMessages] = useState([])
 
@@ -21,12 +21,12 @@ export default function useConversations(room_id) {
         setMessages(resp)
     }
 
-    const fetchConversations = id => {
+    const fetchMessages = id => {
         setIsLoading(true)
         fetchRoomData(id).then(updateMessages)
     }
 
-    useEffect(() => fetchConversations(room_id), [])
+    useEffect(() => fetchMessages(room_id), [])
 
-    return [isLoading, messages, setMessages, fetchConversations]
+    return [isLoading, messages, setMessages, fetchMessages]
 }

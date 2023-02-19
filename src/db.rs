@@ -4,52 +4,48 @@ use std::{
     collections::{HashMap, HashSet},
     time::SystemTime,
 };
-use uuid::Uuid;
 
-use crate::models::{Conversation, NewConversation, Room, RoomResponse, User};
+use crate::models::{Message, NewMessage, NewUser, Room, RoomResponse, User};
 
 type DbError = Box<dyn std::error::Error + Send + Sync>;
 
-pub fn find_user_by_uid(conn: &mut SqliteConnection, uid: Uuid) -> Result<Option<User>, DbError> {
+pub fn find_user_by_id(conn: &mut PgConnection, id: i32) -> Result<Option<User>, DbError> {
     use crate::schema::users::dsl::*;
 
-    let user = users
-        .filter(id.eq(uid.to_string()))
-        .first::<User>(conn)
-        .optional()?;
+    let user = users.filter(id.eq(id)).first::<User>(conn).optional()?;
 
     Ok(user)
 }
 
-pub fn get_conversation_by_room_uid(
-    conn: &mut SqliteConnection,
-    uid: Uuid,
-) -> Result<Option<Vec<Conversation>>, DbError> {
-    use crate::schema::conversations;
+pub fn get_messages_by_room_id(
+    conn: &mut PgConnection,
+    id: i32,
+) -> Result<Option<Vec<Message>>, DbError> {
+    use crate::schema::messages;
 
-    let convo = conversations::table
-        .filter(conversations::room_id.eq(uid.to_string()))
+    let convo = messages::table
+        .filter(messages::room_id.eq(id))
         .load(conn)
         .optional()?;
 
     Ok(convo)
 }
 
-pub fn find_user_by_phone(
-    conn: &mut SqliteConnection,
-    user_phone: String,
+pub fn find_user_by_username(
+    conn: &mut PgConnection,
+    username: String,
 ) -> Result<Option<User>, DbError> {
     use crate::schema::users::dsl::*;
 
     let user = users
-        .filter(phone.eq(user_phone))
+        .filter(username.eq(username))
         .first::<User>(conn)
         .optional()?;
 
     Ok(user)
 }
 
-pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, DbError> {
+pub fn get_all_rooms(conn: &mut PgConnection) -> Result<Vec<RoomResponse>, DbError> {
     use crate::schema::rooms;
     use crate::schema::users;
 
@@ -79,32 +75,26 @@ pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, D
             .map(|item| (item.id.to_string(), item)),
     );
 
-    let response_rooms = rooms_data.into_iter().map(|room| {
-        let users = rooms_map
-            .get(&room.id.to_string())
-            .unwrap()
-            .into_iter()
-            .map(|id| users_map.get(id.to_owned()).unwrap().clone())
-            .collect::<Vec<_>>();
-        return RoomResponse{ room, users };
-    }).collect::<Vec<_>>();
+    let response_rooms = rooms_data
+        .into_iter()
+        .map(|room| {
+            let users = rooms_map
+                .get(&room.id.to_string())
+                .unwrap()
+                .into_iter()
+                .map(|id| users_map.get(id.to_owned()).unwrap().clone())
+                .collect::<Vec<_>>();
+            return RoomResponse { room, users };
+        })
+        .collect::<Vec<_>>();
     Ok(response_rooms)
 }
 
-fn iso_date() -> String {
-    let now = SystemTime::now();
-    let now: DateTime<Utc> = now.into();
-    return now.to_rfc3339();
-}
-
-pub fn insert_new_user(conn: &mut SqliteConnection, nm: &str, pn: &str) -> Result<User, DbError> {
+pub fn insert_new_user(conn: &mut PgConnection, nm: &str) -> Result<NewUser, DbError> {
     use crate::schema::users::dsl::*;
 
-    let new_user = User {
-        id: Uuid::new_v4().to_string(),
+    let new_user = NewUser {
         username: nm.to_owned(),
-        phone: pn.to_owned(),
-        created_at: iso_date(),
     };
 
     diesel::insert_into(users).values(&new_user).execute(conn)?;
@@ -112,23 +102,18 @@ pub fn insert_new_user(conn: &mut SqliteConnection, nm: &str, pn: &str) -> Resul
     Ok(new_user)
 }
 
-pub fn insert_new_conversation(
-    conn: &mut SqliteConnection,
-    new: NewConversation,
-) -> Result<Conversation, DbError> {
-    use crate::schema::conversations::dsl::*;
+pub fn insert_new_message(conn: &mut PgConnection, new: NewMessage) -> Result<NewMessage, DbError> {
+    use crate::schema::messages::dsl::*;
 
-    let new_conversation = Conversation {
-        id: Uuid::new_v4().to_string(),
+    let new_message = NewMessage {
         user_id: new.user_id,
         room_id: new.room_id,
-        content: new.message,
-        created_at: iso_date(),
+        content: new.content,
     };
 
-    diesel::insert_into(conversations)
-        .values(&new_conversation)
+    diesel::insert_into(messages)
+        .values(&new_message)
         .execute(conn)?;
 
-    Ok(new_conversation)
+    Ok(new_message)
 }

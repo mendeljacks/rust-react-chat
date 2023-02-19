@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { base_url } from './rooms'
 
-async function createAccount({ username, phone }) {
+async function createAccount({ username }) {
     try {
         const url = `${base_url}/users/create`
         let result = await fetch(url, {
@@ -9,7 +9,7 @@ async function createAccount({ username, phone }) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username, phone })
+            body: JSON.stringify({ username })
         })
         return result.json()
     } catch (e) {
@@ -17,9 +17,10 @@ async function createAccount({ username, phone }) {
     }
 }
 
-async function signIn({ phone }) {
+async function signIn({ username }) {
     try {
-        const url = `${base_url}/users/phone/` + phone
+        const url = `${base_url}/users/username/` + username
+
         let result = await fetch(url)
         return result.json()
     } catch (e) {
@@ -38,12 +39,11 @@ export default function Login({ show, setAuth }) {
         const onCreateUsername = async e => {
             e.preventDefault()
             let username = e.target.username.value
-            let phone = e.target.phone.value
-            if (username === '' || phone === '') {
+            if (username === '') {
                 return
             }
 
-            let res = await createAccount({ username, phone })
+            let res = await createAccount({ username })
             if (res === null) {
                 alert('Failed to create account')
                 return
@@ -61,17 +61,6 @@ export default function Login({ show, setAuth }) {
                         type='text'
                         name='username'
                         placeholder='Jhon Doe'
-                        className='w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600'
-                    />
-                </div>
-
-                <div>
-                    <label className='text-sm font-light'>Phone Number</label>
-                    <input
-                        required
-                        type='text'
-                        name='phone'
-                        placeholder='+1111...'
                         className='w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600'
                     />
                 </div>
@@ -100,19 +89,19 @@ export default function Login({ show, setAuth }) {
     const FormSignIn = ({ setAuth }) => {
         const onSignIn = async e => {
             e.preventDefault()
-            let phone = e.target.phone.value
-            if (phone === '') {
+            let username = e.target.username.value
+            if (username === '') {
                 return
             }
 
-            let res = await signIn({ phone })
+            let res = await signIn({ username })
             if (res === null) {
                 alert('Failed to create account')
                 return
             }
 
             if (!res.id) {
-                alert(`Phone number not found ${phone}`)
+                alert(`Username not found ${username}`)
                 return
             }
 
@@ -122,12 +111,12 @@ export default function Login({ show, setAuth }) {
         return (
             <form action='' className='mt-4 space-y-2' onSubmit={onSignIn}>
                 <div>
-                    <label className='text-sm font-light'>Phone</label>
+                    <label className='text-sm font-light'>Username</label>
                     <input
                         required
                         type='text'
-                        name='phone'
-                        placeholder='+1111...'
+                        name='username'
+                        placeholder='Jhon Doe'
                         className='w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600'
                     />
                 </div>
@@ -158,7 +147,7 @@ export default function Login({ show, setAuth }) {
             <div className='flex items-center justify-center min-h-screen'>
                 <div className='px-8 py-6 mt-4 text-left bg-white  max-w-[400px] w-full rounded-xl shadow-lg'>
                     <h3 className='text-xl text-slate-800 font-semibold'>
-                        {isShowSigIn ? 'Log in with your phone.' : 'Create your account.'}
+                        {isShowSigIn ? 'Log in with your username.' : 'Create your account.'}
                     </h3>
                     {isShowSigIn ? (
                         <FormSignIn setAuth={setAuth} />

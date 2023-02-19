@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from "react";
-import Avatar from "./avatar"
+import React, { useEffect, useRef } from 'react'
+import Avatar from './avatar'
 
-function ConversationItem({ right, content, username }) {
+function MessageItem({ right, content, username }) {
     if (right) {
         return (
             <div className='w-full flex justify-end'>
@@ -29,24 +29,25 @@ function ConversationItem({ right, content, username }) {
     )
 }
 
-export default function Conversation({ data, auth, users }) {
-    const ref = useRef(null);
+export default function Message({ data, auth, users }) {
+    const ref = useRef(null)
 
     useEffect(() => {
         ref.current?.scrollTo(0, ref.current.scrollHeight)
-    }, [data]);
+    }, [data])
 
     return (
         <div className='p-4 space-y-4 overflow-auto' ref={ref}>
-            {
-                data.map(item => {
-                    return <ConversationItem
+            {data.map(item => {
+                return (
+                    <MessageItem
                         right={item.user_id === auth.id}
                         content={item.content}
                         username={users.get(item.user_id)}
-                        key={item.id} />
-                })
-            }
+                        key={item.id}
+                    />
+                )
+            })}
         </div>
     )
 }
