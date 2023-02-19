@@ -1,9 +1,6 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use diesel::prelude::*;
-use std::{
-    collections::{HashMap, HashSet},
-    time::SystemTime,
-};
+use std::collections::{HashMap, HashSet};
 
 use crate::models::{Message, NewMessage, NewUser, Room, RoomResponse, User};
 
@@ -95,6 +92,8 @@ pub fn insert_new_user(conn: &mut PgConnection, nm: &str) -> Result<NewUser, DbE
 
     let new_user = NewUser {
         username: nm.to_owned(),
+        created_at: Some(Utc::now().naive_utc()),
+        updated_at: Some(Utc::now().naive_utc()),
     };
 
     diesel::insert_into(users).values(&new_user).execute(conn)?;
@@ -109,6 +108,8 @@ pub fn insert_new_message(conn: &mut PgConnection, new: NewMessage) -> Result<Ne
         user_id: new.user_id,
         room_id: new.room_id,
         content: new.content,
+        created_at: None,
+        updated_at: None,
     };
 
     diesel::insert_into(messages)

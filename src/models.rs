@@ -9,9 +9,12 @@ pub struct User {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Insertable, Queryable, Deserialize)]
+#[table_name = "users"]
 pub struct NewUser {
     pub username: String,
+    pub created_at: Option<chrono::NaiveDateTime>,
+    pub updated_at: Option<chrono::NaiveDateTime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
@@ -25,6 +28,8 @@ pub struct Room {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewRoom {
     pub name: String,
+    pub created_at: Option<chrono::NaiveDateTime>,
+    pub updated_at: Option<chrono::NaiveDateTime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
@@ -37,11 +42,14 @@ pub struct Message {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Insertable, Clone, Serialize, Deserialize)]
+#[table_name = "messages"]
 pub struct NewMessage {
     pub room_id: i32,
     pub user_id: i32,
     pub content: String,
+    pub created_at: Option<chrono::NaiveDateTime>,
+    pub updated_at: Option<chrono::NaiveDateTime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
@@ -53,10 +61,13 @@ pub struct RoomHasUser {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Insertable, Deserialize)]
+#[table_name = "room_has_users"]
 pub struct NewRoomHasUser {
     pub room_id: i32,
     pub user_id: i32,
+    pub created_at: Option<chrono::NaiveDateTime>,
+    pub updated_at: Option<chrono::NaiveDateTime>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
