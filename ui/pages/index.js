@@ -4,6 +4,7 @@ import Avatar from '../components/avatar'
 import Login from '../components/login'
 import ChatList from '../components/rooms'
 import useLocalStorage from '../libs/useLocalStorage'
+import useMessages from '../libs/useMessage'
 import useWebsocket from '../libs/useWebsocket'
 
 export default function Home() {
