@@ -8,7 +8,7 @@
             "type": "chrome",
             "request": "launch",
             "name": "Launch Chrome against localhost",
-            "url": "http://sparkling-violet-5809.fly.dev",
+            "url": "http://mendelchat.fly.dev",
             "webRoot": "${workspaceFolder}"
         }
     ]

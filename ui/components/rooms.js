@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Avatar from './avatar'
 
-export const hostname = `sparkling-violet-5809.fly.dev`
+export const hostname = 'mendelchat.fly.dev'
 export const base_url = `https://${hostname}`
 async function getRooms() {
     try {
