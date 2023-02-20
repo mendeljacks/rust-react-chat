@@ -70,13 +70,23 @@ pub struct NewRoomHasUser {
     pub updated_at: Option<chrono::NaiveDateTime>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable)]
+pub struct RoomHasUserWithUser {
+    pub id: i32,
+    pub room_id: i32,
+    pub user_id: i32,
+    pub created_at: chrono::NaiveDateTime,
+    pub updated_at: chrono::NaiveDateTime,
+    pub user: User,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoomResponse {
     pub id: i32,
     pub name: String,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
-    pub participants: Vec<User>,
+    pub room_has_users: Vec<RoomHasUserWithUser>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

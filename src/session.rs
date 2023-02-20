@@ -139,6 +139,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let new_message = NewMessage {
                             user_id: input.user_id,
                             room_id: input.room_id,
+                            created_at: None,
+                            updated_at: None,
                             content: input.value.join(""),
                         };
                         let _ = db::insert_new_message(&mut conn, new_message);
