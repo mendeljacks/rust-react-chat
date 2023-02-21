@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { hostname } from '../components/rooms'
+import { hostname } from '../services/api'
 
 export default function useWebsocket(onMessage) {
     const ws = useRef(null)

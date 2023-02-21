@@ -1,6 +1,6 @@
-# fly.toml file generated for sparkling-violet-5809 on 2023-02-17T01:25:09-05:00
+# fly.toml file generated for mendelchat on 2023-02-20T10:33:57-05:00
 
-app = "sparkling-violet-5809"
+app = "mendelchat"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []

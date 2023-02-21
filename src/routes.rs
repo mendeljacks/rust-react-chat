@@ -9,18 +9,18 @@ use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
 };
-use serde_json::json;
-use uuid::Uuid;
 
 use crate::db;
 use crate::models;
 use crate::server;
 use crate::session;
 
-type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 pub async fn index() -> impl Responder {
-    NamedFile::open_async("./static/index.html").await.unwrap()
+    NamedFile::open_async("./static/index.html")
+        .await
+        .expect("Index not found did you build static folder?")
 }
 
 pub async fn chat_server(
@@ -39,7 +39,7 @@ pub async fn chat_server(
             db_pool: pool,
         },
         &req,
-        stream
+        stream,
     )
 }
 
@@ -50,7 +50,37 @@ pub async fn create_user(
 ) -> Result<HttpResponse, Error> {
     let user = web::block(move || {
         let mut conn = pool.get()?;
-        db::insert_new_user(&mut conn, &form.username, &form.phone)
+        db::insert_new_user(&mut conn, &form.username)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorUnprocessableEntity)?;
+
+    Ok(HttpResponse::Ok().json(user))
+}
+
+#[post("/rooms/create")]
+pub async fn create_room(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewRoom>,
+) -> Result<HttpResponse, Error> {
+    let user = web::block(move || {
+        let mut conn = pool.get()?;
+        db::insert_new_room(&mut conn, &form.name)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorUnprocessableEntity)?;
+
+    Ok(HttpResponse::Ok().json(user))
+}
+
+#[post("/room_has_users/create")]
+pub async fn create_room_has_user(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewRoomHasUser>,
+) -> Result<HttpResponse, Error> {
+    let user = web::block(move || {
+        let mut conn = pool.get()?;
+        db::insert_new_room_has_user(&mut conn, form.room_id, form.user_id)
     })
     .await?
     .map_err(actix_web::error::ErrorUnprocessableEntity)?;
@@ -61,88 +91,53 @@ pub async fn create_user(
 #[get("/users/{user_id}")]
 pub async fn get_user_by_id(
     pool: web::Data<DbPool>,
-    id: web::Path<Uuid>,
+    id: web::Path<i32>,
 ) -> Result<HttpResponse, Error> {
     let user_id = id.to_owned();
     let user = web::block(move || {
         let mut conn = pool.get()?;
-        db::find_user_by_uid(&mut conn, user_id)
+        db::find_user_by_id(&mut conn, user_id)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if let Some(user) = user {
-        Ok(HttpResponse::Ok().json(user))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": format!("No user found with phone: {id}")
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(user))
 }
 
-#[get("/conversations/{uid}")]
-pub async fn get_conversation_by_id(
+#[get("/messages/{uid}")]
+pub async fn get_message_by_id(
     pool: web::Data<DbPool>,
-    uid: web::Path<Uuid>,
+    id: web::Path<i32>,
 ) -> Result<HttpResponse, Error> {
-    let room_id = uid.to_owned();
-    let conversations = web::block(move || {
+    let room_id = id.to_owned();
+    let messages = web::block(move || {
         let mut conn = pool.get()?;
-        db::get_conversation_by_room_uid(&mut conn, room_id)
+        db::get_messages_by_room_id(&mut conn, room_id)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if let Some(data) = conversations {
-        Ok(HttpResponse::Ok().json(data))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": format!("No conversation with room_id: {room_id}")
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(messages))
 }
 
-#[get("/users/phone/{user_phone}")]
-pub async fn get_user_by_phone(
+#[get("/users/username/{username}")]
+pub async fn get_user_by_username(
     pool: web::Data<DbPool>,
-    phone: web::Path<String>,
+    uname: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
-    let user_phone = phone.to_string();
+    let username = uname.to_string();
     let user = web::block(move || {
         let mut conn = pool.get()?;
-        db::find_user_by_phone(&mut conn, user_phone)
+        db::find_user_by_username(&mut conn, username)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if let Some(user) = user {
-        Ok(HttpResponse::Ok().json(user))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": format!("No user found with phone: {}", phone.to_string())
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[get("/rooms")]
-pub async fn get_rooms(
-    pool: web::Data<DbPool>,
-) -> Result<HttpResponse, Error> {
+pub async fn get_rooms(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let rooms = web::block(move || {
         let mut conn = pool.get()?;
         db::get_all_rooms(&mut conn)
@@ -150,16 +145,20 @@ pub async fn get_rooms(
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if !rooms.is_empty() {
-        Ok(HttpResponse::Ok().json(rooms))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": "No rooms available at the moment.",
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(rooms))
+}
+
+#[get("/rooms/{name}")]
+pub async fn get_room_by_name(
+    pool: web::Data<DbPool>,
+    name: web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    let room = web::block(move || {
+        let mut conn = pool.get()?;
+        db::find_room_by_name(&mut conn, name.to_string())
+    })
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(room))
 }

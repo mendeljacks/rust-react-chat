@@ -11,12 +11,12 @@ use diesel::{
 };
 
 use crate::db;
-use crate::models::NewConversation;
+use crate::models::NewMessage;
 use crate::server;
 
 const HEARBEET: Duration = Duration::from_secs(5);
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
-type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 #[derive(Debug)]
 pub struct WsChatSession {
@@ -41,8 +41,8 @@ pub enum ChatType {
 struct ChatMessage {
     pub chat_type: ChatType,
     pub value: Vec<String>,
-    pub room_id: String,
-    pub user_id: String,
+    pub room_id: i32,
+    pub user_id: i32,
     pub id: usize,
 }
 
@@ -115,8 +115,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             chat_type: ChatType::TYPING,
                             value: input.value.to_vec(),
                             id: self.id,
-                            room_id: input.room_id.to_string(),
-                            user_id: input.user_id.to_string(),
+                            room_id: input.room_id,
+                            user_id: input.user_id,
                         };
                         let msg = serde_json::to_string(&chat_msg).unwrap();
                         self.addr.do_send(server::ClientMessage {
@@ -131,17 +131,19 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             chat_type: ChatType::TEXT,
                             value: input.value.to_vec(),
                             id: self.id,
-                            room_id: input.room_id.to_string(),
-                            user_id: input.user_id.to_string(),
+                            room_id: input.room_id,
+                            user_id: input.user_id,
                         };
 
                         let mut conn = self.db_pool.get().unwrap();
-                        let new_conversation = NewConversation {
-                            user_id: input.user_id.to_string(),
-                            room_id: input.room_id.to_string(),
-                            message: input.value.join(""),
+                        let new_message = NewMessage {
+                            user_id: input.user_id,
+                            room_id: input.room_id,
+                            created_at: None,
+                            updated_at: None,
+                            content: input.value.join(""),
                         };
-                        let _ = db::insert_new_conversation(&mut conn, new_conversation);
+                        let _ = db::insert_new_message(&mut conn, new_message);
                         let msg = serde_json::to_string(&chat_msg).unwrap();
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,

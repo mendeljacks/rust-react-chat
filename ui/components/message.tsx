@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import Avatar from "./avatar"
+import React, { useEffect, useRef } from 'react'
+import { Message, Room, RoomResponse, User } from '../types/types'
+import Avatar from './avatar'
 
-function ConversationItem({ right, content, username }) {
+function MessageItem({ right, content, username }) {
     if (right) {
         return (
             <div className='w-full flex justify-end'>
@@ -29,24 +30,36 @@ function ConversationItem({ right, content, username }) {
     )
 }
 
-export default function Conversation({ data, auth, users }) {
-    const ref = useRef(null);
+export default function Messages({
+    messages,
+    user,
+    room
+}: {
+    messages: Message[]
+    user: User
+    room: RoomResponse
+}) {
+    const ref = useRef(null)
 
     useEffect(() => {
         ref.current?.scrollTo(0, ref.current.scrollHeight)
-    }, [data]);
+    }, [messages])
 
     return (
         <div className='p-4 space-y-4 overflow-auto' ref={ref}>
-            {
-                data.map(item => {
-                    return <ConversationItem
-                        right={item.user_id === auth.id}
-                        content={item.content}
-                        username={users.get(item.user_id)}
-                        key={item.id} />
-                })
-            }
+            {messages.map(message => {
+                return (
+                    <MessageItem
+                        right={message.user_id === user.id}
+                        content={message.content}
+                        username={
+                            room.room_has_users.find(user => user?.id === message.user_id)?.user
+                                .username
+                        }
+                        key={message.id}
+                    />
+                )
+            })}
         </div>
     )
 }
