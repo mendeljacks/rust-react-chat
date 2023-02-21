@@ -1,46 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import axios from 'axios'
-import Avatar from './avatar'
-import { rooms } from '../stores/rooms'
-import { action, runInAction } from 'mobx'
+import { runInAction } from 'mobx'
 import { observer } from 'mobx-react-lite'
+import * as moment from 'moment'
+import { useEffect, useState } from 'react'
+import { getRooms } from '../services/rooms'
+import { rooms_store } from '../stores/store'
+import { Room, RoomResponse } from '../types/types'
+import Avatar from './avatar'
 
-export const base_url =
-    typeof window !== 'undefined' && window.location.hostname === 'localhost'
-        ? 'http://localhost:8080'
-        : 'https://mendelchat.fly.dev'
-
-async function getRooms() {
-    try {
-        const url = `${base_url}/rooms`
-        let result = await fetch(url)
-        return result.json()
-    } catch (e) {
-        console.log(e)
-        return Promise.resolve(null)
-    }
-}
-
-export const createRoom = async (name: string) => {
-    try {
-        const url = `${base_url}/rooms/create`
-        let result = await axios.post(url, {
-            name
-        })
-
-        return result.data
-    } catch (e) {
-        return Promise.reject(e)
-    }
-}
-
-function ChatListItem({ onSelect, room, userId, index, selectedItem }) {
-    const { users, created_at, last_message } = room
+function RoomListItem({ onSelect, room, userId, index, selectedItem }) {
+    const { room_has_users, name, created_at } = room
     const active = index == selectedItem
-    const date = new Date(created_at)
-    const ampm = date.getHours() >= 12 ? 'PM' : 'AM'
-    const time = `${date.getHours()}:${date.getMinutes()} ${ampm}`
-    const name = users?.filter(user => user.id != userId).map(user => user.username)[0]
 
     return (
         <div
@@ -56,61 +25,68 @@ function ChatListItem({ onSelect, room, userId, index, selectedItem }) {
                     <Avatar>{name}</Avatar>
                     <div className='w-full max-w-[150px]'>
                         <h3 className='font-semibold text-sm text-gray-700'>{name}</h3>
-                        <p className='font-light text-xs text-gray-600 truncate'>{last_message}</p>
+                        <p className='font-light text-xs text-gray-600 truncate'>
+                            {room_has_users?.length} Users in room
+                        </p>
                     </div>
                 </div>
-                <div className='text-gray-400 min-w-[55px]'>
-                    <span className='text-xs'>{time}</span>
+                <div className='text-gray-400 min-w-[60px]'>
+                    <span className='text-xs'>{moment.utc(created_at).fromNow()}</span>
                 </div>
             </div>
         </div>
     )
 }
 
-export const ChatList = observer(
-    ({ onChatChange, userId }: { onChatChange: Function; userId: number }) => {
+export const fetch_rooms = async () => {
+    rooms_store.is_loading = true
+    const data = await getRooms()
+
+    runInAction(() => {
+        rooms_store.rooms = data
+        rooms_store.is_loading = false
+    })
+}
+
+export const RoomList = observer(
+    ({ onRoomChange, userId }: { onRoomChange: Function; userId: number }) => {
         const [selectedItem, setSelectedItem] = useState(-1)
 
         useEffect(() => {
             runInAction(() => {
-                rooms.is_loading = true
+                rooms_store.is_loading = true
             })
-            getRooms().then(
-                action(data => {
-                    rooms.rooms = data
-                    rooms.is_loading = false
-                })
-            )
-        }, [rooms.rooms])
+            fetch_rooms()
+        }, [])
 
-        const onSelectedChat = (idx, item) => {
+        const onSelectedRoom = (idx, room: RoomResponse) => {
             setSelectedItem(idx)
             let mapUsers = new Map()
-            item.users.forEach(el => {
+            room.room_has_users.forEach(el => {
                 mapUsers.set(el.id, el)
             })
-            const users = {
-                get: id => {
-                    return mapUsers.get(id)?.username
-                },
-                get_target_user: id => {
-                    return item.users
-                        .filter(el => el.id != id)
-                        .map(el => el.username)
-                        .join('')
-                }
-            }
-            onChatChange({ ...item.room, users })
+            // const users = {
+            //     get: id => {
+            //         return mapUsers.get(id)?.username
+            //     },
+            //     get_target_user: id => {
+            //         return room.room_has_users
+            //             .filter(el => el.id != id)
+            //             .map(el => el.user.username)
+            //             .join('')
+            //     }
+            // }
+            onRoomChange(room)
         }
 
         return (
-            <div className='overflow-hidden space-y-3'>
-                {rooms.is_loading && <p>Loading chat lists.</p>}
-                {rooms.rooms?.map((item, index) => {
+            <div className='overflow-hidden space-y-3 mt-3'>
+                {rooms_store.is_loading && <p>Loading room lists.</p>}
+                {rooms_store.rooms?.map((item, index) => {
                     return (
-                        <ChatListItem
-                            onSelect={idx => onSelectedChat(idx, item)}
-                            room={{ ...item.room, users: item.users }}
+                        <RoomListItem
+                            onSelect={idx => onSelectedRoom(idx, item)}
+                            room={item}
                             index={index}
                             key={index}
                             userId={userId}

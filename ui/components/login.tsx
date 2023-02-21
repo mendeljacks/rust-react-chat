@@ -1,32 +1,6 @@
 import { useState } from 'react'
-import { base_url } from './rooms'
-
-async function createAccount({ username }) {
-    try {
-        const url = `${base_url}/users/create`
-        let result = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username })
-        })
-        return result.json()
-    } catch (e) {
-        return Promise.reject(e)
-    }
-}
-
-async function signIn({ username }) {
-    try {
-        const url = `${base_url}/users/username/` + username
-
-        let result = await fetch(url)
-        return result.json()
-    } catch (e) {
-        return Promise.reject(e)
-    }
-}
+import axios from 'axios'
+import { createUser, getUser } from '../services/users'
 
 export default function Login({ show, setAuth }) {
     const [isShowSigIn, setShowSignIn] = useState(false)
@@ -43,7 +17,7 @@ export default function Login({ show, setAuth }) {
                 return
             }
 
-            let res = await createAccount({ username })
+            let res = await createUser({ username })
             if (res === null) {
                 alert('Failed to create account')
                 return
@@ -94,7 +68,7 @@ export default function Login({ show, setAuth }) {
                 return
             }
 
-            let res = await signIn({ username })
+            let res = await getUser({ username })
             if (res === null) {
                 alert('Failed to create account')
                 return

@@ -1,18 +1,37 @@
+import { action } from 'mobx'
+import { observer } from 'mobx-react-lite'
 import Head from 'next/head'
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Avatar from '../components/avatar'
 import Login from '../components/login'
-import { ChatList, createRoom } from '../components/rooms'
+import Message from '../components/message'
+import { fetch_rooms, RoomList } from '../components/rooms'
 import useLocalStorage from '../libs/useLocalStorage'
-import useMessages from '../libs/useMessage'
 import useWebsocket from '../libs/useWebsocket'
+import { fetchRoomData } from '../services/messages'
+import { ensureRoomExists } from '../services/rooms'
+import { ensureRoomHasUserExists } from '../services/room_has_user'
+import { rooms_store } from '../stores/store'
 
-export default function Home() {
-    const [room, setSelectedRoom] = useState(null)
+const Home = observer(() => {
+    const room = rooms_store.selected_room
+    useEffect(() => fetchMessages(room?.id), [])
     const [isTyping, setIsTyping] = useState(false)
     const [showLogIn, setShowLogIn] = useState(false)
     const [auth, setAuthUser] = useLocalStorage('user', false)
-    const [isLoading, messages, setMessages, fetchMessages] = useMessages('')
+
+    const [isLoading, setIsLoading] = useState(true)
+    const [messages, setMessages] = useState([])
+
+    const updateMessagess = (resp = []) => {
+        setIsLoading(false)
+        setMessages(resp)
+    }
+
+    const fetchMessages = id => {
+        setIsLoading(true)
+        fetchRoomData(id).then(updateMessagess)
+    }
 
     const handleTyping = mode => {
         if (mode === 'IN') {
@@ -78,7 +97,7 @@ export default function Home() {
         }
 
         if (!room.id) {
-            alert('Please select chat room!')
+            alert('Please select room!')
             return
         }
 
@@ -95,11 +114,11 @@ export default function Home() {
         onFocusChange()
     }
 
-    const updateMessages = data => {
+    const updateMessages = action(data => {
         if (!data.id) return
         fetchMessages(data.id)
-        setSelectedRoom(data)
-    }
+        rooms_store.selected_room = data
+    })
 
     const signOut = () => {
         window.localStorage.removeItem('user')
@@ -139,13 +158,20 @@ export default function Home() {
                                 className='w-full px-4 py-2 border rounded-[10px] focus:outline-none focus:ring-1 focus:ring-blue-600'
                             />
                             <button
-                                onClick={() => createRoom(newRoom)}
+                                disabled={newRoom.length === 0}
+                                onClick={async () => {
+                                    if (newRoom.length > 0) {
+                                        await ensureRoomExists(newRoom)
+                                        await ensureRoomHasUserExists(newRoom, auth.id)
+                                        await fetch_rooms()
+                                    }
+                                }}
                                 className='text-xs p-3 rounded-[10px] bg-violet-200 font-semibold text-violet-600 text-center'
                             >
-                                CREATE ROOM
+                                ADD ROOM
                             </button>
                         </span>
-                        <ChatList onChatChange={updateMessages} userId={auth.id} />
+                        <RoomList onRoomChange={updateMessages} userId={auth.id} />
                         <button
                             onClick={signOut}
                             className='text-xs w-full max-w-[295px] p-3 rounded-[10px] bg-violet-200 font-semibold text-violet-600 text-center absolute bottom-4'
@@ -157,12 +183,10 @@ export default function Home() {
                         <section className='rounded-r-[25px] w-full max-w-[690px] grid grid-rows-[80px_minmax(450px,_1fr)_65px]'>
                             <div className='rounded-tr-[25px] w-ful'>
                                 <div className='flex gap-3 p-3 items-center'>
-                                    <Avatar color='rgb(245 158 11)'>
-                                        {room.users.get_target_user(auth.id)}
-                                    </Avatar>
+                                    <Avatar color='rgb(245 158 11)'>{room.name}</Avatar>
                                     <div>
                                         <p className='font-semibold text-gray-600 text-base'>
-                                            {room.users.get_target_user(auth.id)}
+                                            {room.name}
                                         </p>
                                         <div className='text-xs text-gray-400'>
                                             {isTyping ? 'Typing...' : '10:15 AM'}
@@ -174,7 +198,7 @@ export default function Home() {
                             {isLoading && room.id && (
                                 <p className='px-4 text-slate-500'>Loading messages...</p>
                             )}
-                            <Messages data={messages} auth={auth} users={room.users} />
+                            <Message messages={messages} user={auth} room={room} />
                             <div className='w-full'>
                                 <form
                                     onSubmit={submitMessage}
@@ -201,4 +225,6 @@ export default function Home() {
             </div>
         </div>
     )
-}
+})
+
+export default Home

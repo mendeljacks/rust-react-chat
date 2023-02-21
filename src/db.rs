@@ -3,8 +3,8 @@ use diesel::prelude::*;
 
 use crate::{
     models::{
-        Message, NewMessage, NewRoom, NewUser, Room, RoomHasUser, RoomHasUserWithUser,
-        RoomResponse, User,
+        Message, NewMessage, NewRoom, NewRoomHasUser, NewUser, Room, RoomHasUser,
+        RoomHasUserWithUser, RoomResponse, User,
     },
     schema,
 };
@@ -43,6 +43,14 @@ pub fn find_user_by_username(
         .first::<User>(conn)
         .optional()?;
     Ok(user)
+}
+
+pub fn find_room_by_name(conn: &mut PgConnection, name: String) -> Result<Option<User>, DbError> {
+    let room = schema::rooms::table
+        .filter(schema::rooms::name.eq(name))
+        .first::<User>(conn)
+        .optional()?;
+    Ok(room)
 }
 
 pub fn get_all_rooms(conn: &mut PgConnection) -> Result<Vec<RoomResponse>, DbError> {
@@ -116,6 +124,25 @@ pub fn insert_new_user(conn: &mut PgConnection, nm: &str) -> Result<NewUser, DbE
     diesel::insert_into(users).values(&new_user).execute(conn)?;
 
     Ok(new_user)
+}
+
+pub fn insert_new_room_has_user(
+    conn: &mut PgConnection,
+    room_id: i32,
+    user_id: i32,
+) -> Result<NewRoomHasUser, DbError> {
+    let new_room_has_user = NewRoomHasUser {
+        room_id: room_id,
+        user_id: user_id,
+        created_at: Some(Utc::now().naive_utc()),
+        updated_at: Some(Utc::now().naive_utc()),
+    };
+
+    diesel::insert_into(schema::room_has_users::table)
+        .values(&new_room_has_user)
+        .execute(conn)?;
+
+    Ok(new_room_has_user)
 }
 
 pub fn insert_new_room(conn: &mut PgConnection, nm: &str) -> Result<NewRoom, DbError> {

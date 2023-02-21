@@ -9,7 +9,6 @@ use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
 };
-use serde_json::json;
 
 use crate::db;
 use crate::models;
@@ -74,6 +73,21 @@ pub async fn create_room(
     Ok(HttpResponse::Ok().json(user))
 }
 
+#[post("/room_has_users/create")]
+pub async fn create_room_has_user(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewRoomHasUser>,
+) -> Result<HttpResponse, Error> {
+    let user = web::block(move || {
+        let mut conn = pool.get()?;
+        db::insert_new_room_has_user(&mut conn, form.room_id, form.user_id)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorUnprocessableEntity)?;
+
+    Ok(HttpResponse::Ok().json(user))
+}
+
 #[get("/users/{user_id}")]
 pub async fn get_user_by_id(
     pool: web::Data<DbPool>,
@@ -87,18 +101,7 @@ pub async fn get_user_by_id(
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if let Some(user) = user {
-        Ok(HttpResponse::Ok().json(user))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": format!("No user found with id: {id}")
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[get("/messages/{uid}")]
@@ -114,18 +117,7 @@ pub async fn get_message_by_id(
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if let Some(data) = messages {
-        Ok(HttpResponse::Ok().json(data))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": format!("No message with room_id: {room_id}")
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(messages))
 }
 
 #[get("/users/username/{username}")]
@@ -141,18 +133,7 @@ pub async fn get_user_by_username(
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if let Some(user) = user {
-        Ok(HttpResponse::Ok().json(user))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": format!("No user found with username: {}", uname)
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(user))
 }
 
 #[get("/rooms")]
@@ -165,4 +146,19 @@ pub async fn get_rooms(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().json(rooms))
+}
+
+#[get("/rooms/{name}")]
+pub async fn get_room_by_name(
+    pool: web::Data<DbPool>,
+    name: web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    let room = web::block(move || {
+        let mut conn = pool.get()?;
+        db::find_room_by_name(&mut conn, name.to_string())
+    })
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(room))
 }

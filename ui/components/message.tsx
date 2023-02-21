@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { Message, Room, RoomResponse, User } from '../types/types'
 import Avatar from './avatar'
 
 function MessageItem({ right, content, username }) {
@@ -29,22 +30,33 @@ function MessageItem({ right, content, username }) {
     )
 }
 
-export default function Message({ data, auth, users }) {
+export default function Messages({
+    messages,
+    user,
+    room
+}: {
+    messages: Message[]
+    user: User
+    room: RoomResponse
+}) {
     const ref = useRef(null)
 
     useEffect(() => {
         ref.current?.scrollTo(0, ref.current.scrollHeight)
-    }, [data])
+    }, [messages])
 
     return (
         <div className='p-4 space-y-4 overflow-auto' ref={ref}>
-            {data.map(item => {
+            {messages.map(message => {
                 return (
                     <MessageItem
-                        right={item.user_id === auth.id}
-                        content={item.content}
-                        username={users.get(item.user_id)}
-                        key={item.id}
+                        right={message.user_id === user.id}
+                        content={message.content}
+                        username={
+                            room.room_has_users.find(user => user?.id === message.user_id)?.user
+                                .username
+                        }
+                        key={message.id}
                     />
                 )
             })}
