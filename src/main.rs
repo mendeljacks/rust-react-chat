@@ -47,6 +47,7 @@ async fn main() -> std::io::Result<()> {
             .service(web::resource("/").to(routes::index))
             .route("/ws", web::get().to(routes::chat_server))
             .service(routes::create_user)
+            .service(routes::create_room)
             .service(routes::get_user_by_id)
             .service(routes::get_user_by_username)
             .service(routes::get_message_by_id)

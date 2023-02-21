@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import Avatar from './avatar'
+import { rooms } from '../stores/rooms'
+import { action, runInAction } from 'mobx'
+import { observer } from 'mobx-react-lite'
 
 export const base_url =
     typeof window !== 'undefined' && window.location.hostname === 'localhost'
@@ -24,6 +27,7 @@ export const createRoom = async (name: string) => {
         let result = await axios.post(url, {
             name
         })
+
         return result.data
     } catch (e) {
         return Promise.reject(e)
@@ -63,54 +67,58 @@ function ChatListItem({ onSelect, room, userId, index, selectedItem }) {
     )
 }
 
-export default function ChatList({ onChatChange, userId }) {
-    const [data, setData] = useState([])
-    const [isLoading, setLoading] = useState(false)
-    const [selectedItem, setSelectedItem] = useState(-1)
+export const ChatList = observer(
+    ({ onChatChange, userId }: { onChatChange: Function; userId: number }) => {
+        const [selectedItem, setSelectedItem] = useState(-1)
 
-    useEffect(() => {
-        setLoading(true)
-        getRooms().then(data => {
-            setData(data)
-            setLoading(false)
-        })
-    }, [])
+        useEffect(() => {
+            runInAction(() => {
+                rooms.is_loading = true
+            })
+            getRooms().then(
+                action(data => {
+                    rooms.rooms = data
+                    rooms.is_loading = false
+                })
+            )
+        }, [rooms.rooms])
 
-    const onSelectedChat = (idx, item) => {
-        setSelectedItem(idx)
-        let mapUsers = new Map()
-        item.users.forEach(el => {
-            mapUsers.set(el.id, el)
-        })
-        const users = {
-            get: id => {
-                return mapUsers.get(id)?.username
-            },
-            get_target_user: id => {
-                return item.users
-                    .filter(el => el.id != id)
-                    .map(el => el.username)
-                    .join('')
+        const onSelectedChat = (idx, item) => {
+            setSelectedItem(idx)
+            let mapUsers = new Map()
+            item.users.forEach(el => {
+                mapUsers.set(el.id, el)
+            })
+            const users = {
+                get: id => {
+                    return mapUsers.get(id)?.username
+                },
+                get_target_user: id => {
+                    return item.users
+                        .filter(el => el.id != id)
+                        .map(el => el.username)
+                        .join('')
+                }
             }
+            onChatChange({ ...item.room, users })
         }
-        onChatChange({ ...item.room, users })
-    }
 
-    return (
-        <div className='overflow-hidden space-y-3'>
-            {isLoading && <p>Loading chat lists.</p>}
-            {data?.map((item, index) => {
-                return (
-                    <ChatListItem
-                        onSelect={idx => onSelectedChat(idx, item)}
-                        room={{ ...item.room, users: item.users }}
-                        index={index}
-                        key={item.room.id}
-                        userId={userId}
-                        selectedItem={selectedItem}
-                    />
-                )
-            })}
-        </div>
-    )
-}
+        return (
+            <div className='overflow-hidden space-y-3'>
+                {rooms.is_loading && <p>Loading chat lists.</p>}
+                {rooms.rooms?.map((item, index) => {
+                    return (
+                        <ChatListItem
+                            onSelect={idx => onSelectedChat(idx, item)}
+                            room={{ ...item.room, users: item.users }}
+                            index={index}
+                            key={index}
+                            userId={userId}
+                            selectedItem={selectedItem}
+                        />
+                    )
+                })}
+            </div>
+        )
+    }
+)
