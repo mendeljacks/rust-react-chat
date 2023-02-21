@@ -59,6 +59,21 @@ pub async fn create_user(
     Ok(HttpResponse::Ok().json(user))
 }
 
+#[post("/rooms/create")]
+pub async fn create_room(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewRoom>,
+) -> Result<HttpResponse, Error> {
+    let user = web::block(move || {
+        let mut conn = pool.get()?;
+        db::insert_new_room(&mut conn, &form.name)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorUnprocessableEntity)?;
+
+    Ok(HttpResponse::Ok().json(user))
+}
+
 #[get("/users/{user_id}")]
 pub async fn get_user_by_id(
     pool: web::Data<DbPool>,
@@ -149,16 +164,5 @@ pub async fn get_rooms(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    if !rooms.is_empty() {
-        Ok(HttpResponse::Ok().json(rooms))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": "No rooms available at the moment.",
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    Ok(HttpResponse::Ok().json(rooms))
 }

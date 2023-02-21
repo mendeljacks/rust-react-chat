@@ -2,7 +2,7 @@ import Head from 'next/head'
 import React, { useEffect, useState } from 'react'
 import Avatar from '../components/avatar'
 import Login from '../components/login'
-import ChatList from '../components/rooms'
+import ChatList, { createRoom } from '../components/rooms'
 import useLocalStorage from '../libs/useLocalStorage'
 import useMessages from '../libs/useMessage'
 import useWebsocket from '../libs/useWebsocket'
@@ -108,6 +108,8 @@ export default function Home() {
 
     useEffect(() => setShowLogIn(!auth), [auth])
 
+    const [newRoom, setNewRoom] = useState('')
+
     return (
         <div>
             <Head>
@@ -123,6 +125,26 @@ export default function Home() {
             >
                 <main className='flex w-full max-w-[1020px] h-[700px] mx-auto bg-[#FAF9FE] rounded-[25px] backdrop-opacity-30 opacity-95'>
                     <aside className='bg-[#F0EEF5] w-[325px] h-[700px] rounded-l-[25px] p-4 overflow-auto relative'>
+                        <span
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                placeItems: 'center'
+                            }}
+                        >
+                            <input
+                                type='text'
+                                value={newRoom}
+                                onChange={e => setNewRoom(e.target.value)}
+                                className='w-full px-4 py-2 border rounded-[10px] focus:outline-none focus:ring-1 focus:ring-blue-600'
+                            />
+                            <button
+                                onClick={() => createRoom(newRoom)}
+                                className='text-xs p-3 rounded-[10px] bg-violet-200 font-semibold text-violet-600 text-center'
+                            >
+                                CREATE ROOM
+                            </button>
+                        </span>
                         <ChatList onChatChange={updateMessages} userId={auth.id} />
                         <button
                             onClick={signOut}

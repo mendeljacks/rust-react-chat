@@ -10,7 +10,7 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, Serialize, Insertable, Queryable, Deserialize)]
-#[table_name = "users"]
+#[diesel(table_name = users)]
 pub struct NewUser {
     pub username: String,
     pub created_at: Option<chrono::NaiveDateTime>,
@@ -25,7 +25,8 @@ pub struct Room {
     pub updated_at: chrono::NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Queryable)]
+#[diesel(table_name = rooms)]
 pub struct NewRoom {
     pub name: String,
     pub created_at: Option<chrono::NaiveDateTime>,
@@ -43,7 +44,7 @@ pub struct Message {
 }
 
 #[derive(Debug, Insertable, Clone, Serialize, Deserialize)]
-#[table_name = "messages"]
+#[diesel(table_name = messages)]
 pub struct NewMessage {
     pub room_id: i32,
     pub user_id: i32,
@@ -62,7 +63,7 @@ pub struct RoomHasUser {
 }
 
 #[derive(Debug, Clone, Serialize, Insertable, Deserialize)]
-#[table_name = "room_has_users"]
+#[diesel(table_name = room_has_users)]
 pub struct NewRoomHasUser {
     pub room_id: i32,
     pub user_id: i32,

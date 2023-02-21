@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import Avatar from './avatar'
 
-export const hostname = 'mendelchat.fly.dev'
-export const base_url = `https://${hostname}`
+export const base_url =
+    typeof window !== 'undefined' && window.location.hostname === 'localhost'
+        ? 'http://localhost:8080'
+        : 'https://mendelchat.fly.dev'
+
 async function getRooms() {
     try {
         const url = `${base_url}/rooms`
@@ -11,6 +15,18 @@ async function getRooms() {
     } catch (e) {
         console.log(e)
         return Promise.resolve(null)
+    }
+}
+
+export const createRoom = async (name: string) => {
+    try {
+        const url = `${base_url}/rooms/create`
+        let result = await axios.post(url, {
+            name
+        })
+        return result.data
+    } catch (e) {
+        return Promise.reject(e)
     }
 }
 
@@ -83,7 +99,7 @@ export default function ChatList({ onChatChange, userId }) {
     return (
         <div className='overflow-hidden space-y-3'>
             {isLoading && <p>Loading chat lists.</p>}
-            {data.map((item, index) => {
+            {data?.map((item, index) => {
                 return (
                     <ChatListItem
                         onSelect={idx => onSelectedChat(idx, item)}

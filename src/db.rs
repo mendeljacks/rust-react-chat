@@ -3,7 +3,8 @@ use diesel::prelude::*;
 
 use crate::{
     models::{
-        Message, NewMessage, NewUser, Room, RoomHasUser, RoomHasUserWithUser, RoomResponse, User,
+        Message, NewMessage, NewRoom, NewUser, Room, RoomHasUser, RoomHasUserWithUser,
+        RoomResponse, User,
     },
     schema,
 };
@@ -115,6 +116,20 @@ pub fn insert_new_user(conn: &mut PgConnection, nm: &str) -> Result<NewUser, DbE
     diesel::insert_into(users).values(&new_user).execute(conn)?;
 
     Ok(new_user)
+}
+
+pub fn insert_new_room(conn: &mut PgConnection, nm: &str) -> Result<NewRoom, DbError> {
+    let new_room = NewRoom {
+        name: nm.to_owned(),
+        created_at: Some(Utc::now().naive_utc()),
+        updated_at: Some(Utc::now().naive_utc()),
+    };
+
+    diesel::insert_into(schema::rooms::table)
+        .values(&new_room)
+        .execute(conn)?;
+
+    Ok(new_room)
 }
 
 pub fn insert_new_message(conn: &mut PgConnection, new: NewMessage) -> Result<NewMessage, DbError> {
